@@ -30,30 +30,42 @@ log = logging.getLogger('bigsuds')
 
 
 class OperationFailed(Exception):
+
     """Base class for bigsuds exceptions."""
 
+
 class ServerError(OperationFailed, WebFault):
+
     """Raised when the BIGIP returns an error via the iControl interface."""
 
+
 class ConnectionError(OperationFailed):
+
     """Raised when the connection to the BIGIP fails."""
 
+
 class ParseError(OperationFailed):
+
     """Raised when parsing data from the BIGIP as a soap message fails.
 
     This is also raised when an invalid iControl namespace
     is looked up on the BIGIP (e.g. <bigip>.LocalLB.Bad).
     """
 
+
 class MethodNotFound(OperationFailed, _MethodNotFound):
+
     """Raised when a particular iControl method does not exist."""
 
+
 class ArgumentError(OperationFailed):
+
     """Raised when too many arguments or incorrect keyword arguments
     are passed to an iControl method."""
 
 
 class BIGIP(object):
+
     """This class exposes the BIGIP's iControl interface.
 
     Example usage:
@@ -77,6 +89,7 @@ class BIGIP(object):
        keyword arguments are passed.
      * All of these exceptions derive from L{OperationFailed}.
     """
+
     def __init__(self, hostname, username='admin', password='admin',
                  debug=False, cachedir=None):
         """init
@@ -133,10 +146,10 @@ class BIGIP(object):
     def _create_client(self, wsdl_name):
         try:
             client = get_client(self._hostname, wsdl_name, self._username,
-                    self._password, self._cachedir)
+                                self._password, self._cachedir)
         except SAXParseException, e:
             raise ParseError('%s\nFailed to parse wsdl. Is "%s" a valid '
-                    'namespace?' % (e, wsdl_name))
+                             'namespace?' % (e, wsdl_name))
         # One situation that raises TransportError is when credentials are bad.
         except (urllib2.URLError, TransportError), e:
             raise ConnectionError(str(e))
@@ -144,10 +157,10 @@ class BIGIP(object):
 
     def _create_client_wrapper(self, client, wsdl_name):
         return _ClientWrapper(client,
-            self._arg_processor_factory,
-            _NativeResultProcessor,
-            wsdl_name,
-            self._debug)
+                              self._arg_processor_factory,
+                              _NativeResultProcessor,
+                              wsdl_name,
+                              self._debug)
 
     def _arg_processor_factory(self, client, method):
         return _DefaultArgProcessor(method, client.factory)
@@ -159,7 +172,9 @@ class BIGIP(object):
             ns = getattr(self, namespace)
             ns.set_attr_list(attr_list)
 
+
 class Transaction(object):
+
     """This class is a context manager for iControl transactions.
 
     Upon successful exit of the with statement, the transaction will be
@@ -177,6 +192,7 @@ class Transaction(object):
     > with Transaction(bigip.use_session_id()) as bigip:
     >     <perform actions inside a transaction>
     """
+
     def __init__(self, bigip):
         self.bigip = bigip
 
@@ -214,7 +230,7 @@ def get_client(hostname, wsdl_name, username='admin', password='admin',
         that caching should be disabled.
     """
     url = 'https://%s/iControl/iControlPortal.cgi?WSDL=%s' % (
-            hostname, wsdl_name)
+        hostname, wsdl_name)
     imp = Import('http://schemas.xmlsoap.org/soap/encoding/')
     imp.filter.add('urn:iControl')
 
@@ -270,10 +286,11 @@ def get_wsdls(hostname, username='admin', password='admin'):
 
 
 class _BIGIPSession(BIGIP):
+
     def __init__(self, hostname, session_id, username='admin', password='admin',
                  debug=False, cachedir=None):
         super(_BIGIPSession, self).__init__(hostname, username=username,
-              password=password, debug=debug, cachedir=cachedir)
+                                            password=password, debug=debug, cachedir=cachedir)
         self._headers = {'X-iControl-Session': str(session_id)}
 
     def _create_client_wrapper(self, client, wsdl_name):
@@ -282,6 +299,7 @@ class _BIGIPSession(BIGIP):
 
 
 class _Namespace(object):
+
     """Represents a top level iControl namespace.
 
     Examples of this are "LocalLB", "System", etc.
@@ -291,6 +309,7 @@ class _Namespace(object):
     Example:
         <LocalLB namespace>.Pool returns the iControl client for "LocalLB.Pool"
     """
+
     def __init__(self, name, client_creator):
         """init
 
@@ -319,8 +338,10 @@ class _Namespace(object):
 
 
 class _ClientWrapper(object):
+
     """A wrapper class that abstracts/extends the suds client API.
     """
+
     def __init__(self, client, arg_processor_factory, result_processor_factory,
                  wsdl_name, debug=False):
         """init
@@ -367,10 +388,10 @@ class _ClientWrapper(object):
             raise
 
         wrapper = _wrap_method(method,
-                self._wsdl_name,
-                self._arg_factory(self._client, method),
-                self._result_factory(),
-                attr in self._usage and self._usage[attr] or None)
+                               self._wsdl_name,
+                               self._arg_factory(self._client, method),
+                               self._result_factory(),
+                               attr in self._usage and self._usage[attr] or None)
         setattr(self, attr, wrapper)
         return wrapper
 
@@ -417,7 +438,7 @@ def _wrap_method(method, wsdl_name, arg_processor, result_processor, usage):
         except AttributeError:
             # Oddly, his seems to happen when the wrong password is used.
             raise ConnectionError('iControl call failed, possibly invalid '
-                    'credentials.')
+                                  'credentials.')
         except _MethodNotFound, e:
             e.__class__ = MethodNotFound
             raise
@@ -427,10 +448,10 @@ def _wrap_method(method, wsdl_name, arg_processor, result_processor, usage):
         except urllib2.URLError, e:
             raise ConnectionError('URLError: %s' % str(e))
         except httplib.BadStatusLine, e:
-            raise ConnectionError('BadStatusLine: %s' %  e)
+            raise ConnectionError('BadStatusLine: %s' % e)
         except SAXParseException, e:
             raise ParseError("Failed to parse the BIGIP's response. This "
-                "was likely caused by a 500 error message.")
+                             "was likely caused by a 500 error message.")
         return result_processor.process(result)
 
     wrapped_method.__doc__ = usage
@@ -441,6 +462,7 @@ def _wrap_method(method, wsdl_name, arg_processor, result_processor, usage):
 
 
 class _ArgProcessor(object):
+
     """Base class for suds argument processors."""
 
     def process(self, args, kwargs):
@@ -580,6 +602,7 @@ class _DefaultArgProcessor(_ArgProcessor):
 
 
 class _ResultProcessor(object):
+
     """Base class for suds result processors."""
 
     def process(self, value):
@@ -592,6 +615,7 @@ class _ResultProcessor(object):
 
 
 class _NativeResultProcessor(_ResultProcessor):
+
     def process(self, value):
         return self._convert_to_native_type(value)
 
