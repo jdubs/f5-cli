@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 
-import getpass
 from argparse import ArgumentParser
+from ConfigParser import ConfigParser
+import getpass
+import os
+
 from connection import Connection
 from pool import Pool
 from node import Node
@@ -12,6 +15,7 @@ from ssl_profile import Ssl_profile
 from profile import Profile
 
 
+config_file = '~/.f5-cli.ini'
 objects = [
     "pool",
     "virtual_server",
@@ -68,41 +72,42 @@ def get_object_connection(obj, connection, partition, parser):
     return object_connection
 
 
+def get_config():
+    config = ConfigParser(defaults={'password': None})
+    config.read(os.path.expanduser(config_file))
+    return config
+
+
 def main():
     parser = ArgumentParser(description="F5 Deployer")
-    parser.add_argument('obj', action='store',
-                        help="The object you want to work with. "
-                             "pool|virutal_server|node")
-    parser.add_argument('action', action='store', help='list, create')
-    parser.add_argument('--user', action="store", dest="username",
-                        default=getpass.getuser(), required=False,
-                        help="F5 User credentials. Defaults to current user.")
-    parser.add_argument('--password', action="store", dest="password",
+    parser.add_argument('obj', action='store', metavar='object_type',
+                        choices=objects,
+                        help='Object type. One of %(choices)s.')
+    parser.add_argument('action', action='store', metavar='action',
+                        choices=actions,
+                        help='Action. One of %(choices)s.')
+    parser.add_argument('--user', action="store", dest="user",
                         required=False,
-                        help="Username. Defaults to current user.")
-    parser.add_argument('--host', action="store", dest="host", required=True,
+                        help="User name. Defaults to current user.")
+    parser.add_argument('--password', action="store", dest="password",
+                        help="Password")
+    parser.add_argument('--host', action="store", dest="host",
                         help='FQDN of the LB you are targeting')
     parser.add_argument('--partition', action="store", dest="partition",
                         default="Common", required=False,
                         help='The target partition. Defaults to Common')
     args, unknown = parser.parse_known_args()
 
-    if args.password is None:
-        print("Enter Password")
-        password = getpass.getpass()
-    else:
-        password = args.password
+    config = get_config()
+    host = args.host or config.get('defaults', 'host')
+    user = args.user or config.get(host, 'user')
+    password = args.password or config.get(host, 'password')
 
-    if args.obj not in objects:
-        print("Please specify a valid object. pool|virtual_server|node")
-        raise Exception("Invalid object specified: {}".format(args.obj))
+    if password is None:
+        prompt = 'Password for {user}@{host}: '.format(user=user, host=host)
+        password = getpass.getpass(prompt)
 
-    if args.action not in actions:
-        print("Please specify a valid action. list|create, delete")
-        raise Exception("Invalid action specified: {}".format(args.action))
-
-    connection = get_f5_connection(
-        args.host, args.username, password, args.partition)
+    connection = get_f5_connection(host, user, password, args.partition)
     if not connection:
         raise Exception("Unable to get F5 connection")
 
