@@ -135,6 +135,9 @@ def main():
     parser.add_argument('--partition', action="store", dest="partition",
                         default="Common", required=False,
                         help='The target partition. Defaults to Common')
+    parser.add_argument('--strip-prefix', action="store", dest="strip_prefix",
+                        default="/Common/", required=False,
+                        help='Prefix to strip off each item in list')
     args, unknown = parser.parse_known_args()
 
     config = get_config()
@@ -162,7 +165,12 @@ def main():
                                                   args.partition, parser)
 
         if args.action == "list":
-            print(formatter(object_connection.list()))
+            obj_list = []
+            for item in object_connection.list():
+                if item.startswith(args.strip_prefix):
+                    item = item[len(args.strip_prefix):]
+                obj_list.append(item)
+            print(formatter(obj_list))
         elif args.action == "create":
             result = object_connection.create(parser)
             if result:
