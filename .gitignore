@@ -1,3 +1,11 @@
 *.pyc
+*.egg
+*.egg-info
+.eggs
+dist
+build
+.tox
 bigsuds-1.0.1/*
 bigsuds
+AUTHORS
+ChangeLog

@@ -30,59 +30,59 @@
 ----------------------------------------------------------------------------
 '''
 
-def create_pool(obj,pool, lbmethod, pl_mems):
-	pool = '/Common/%s' % pool
-	pmlist = []
-	for x in pl_mems.split(','):
-		pm = {}
-		y = x.split(':')
-		pm['address'] = str(y[0])
-		pm['port'] = int(y[1])
-		pmlist.append(pm)
-		
-	try:
-		pllist = obj.LocalLB.Pool.get_list()
-		if pool in pllist:
-			obj.LocalLB.Pool.add_member_v2([pool], [pmlist])
 
-		else:
-			obj.LocalLB.Pool.create_v2([pool],[lbmethod],[pmlist])
+def create_pool(obj, pool, lbmethod, pl_mems):
+    pool = '/Common/%s' % pool
+    pmlist = []
+    for x in pl_mems.split(','):
+        pm = {}
+        y = x.split(':')
+        pm['address'] = str(y[0])
+        pm['port'] = int(y[1])
+        pmlist.append(pm)
 
-		return obj.LocalLB.Pool.get_member_v2([pool])
-	except Exception, e:
-		print e
+    try:
+        pllist = obj.LocalLB.Pool.get_list()
+        if pool in pllist:
+            obj.LocalLB.Pool.add_member_v2([pool], [pmlist])
+
+        else:
+            obj.LocalLB.Pool.create_v2([pool], [lbmethod], [pmlist])
+
+        return obj.LocalLB.Pool.get_member_v2([pool])
+    except Exception, e:
+        print e
 
 
 if __name__ == "__main__":
 
-	import bigsuds
-	import getpass
-	import sys
+    import bigsuds
+    import getpass
+    import sys
 
-	# Directory location of bigsuds.py file
-	sys.path.append(r'C:\dev')
+    # Directory location of bigsuds.py file
+    sys.path.append(r'C:\dev')
 
-	if len(sys.argv) < 6:
-		print "\n\n\tUsage %s ip_address username poolname lbmethod memberlist" % sys.argv[0]
-		sys.exit()
+    if len(sys.argv) < 6:
+        print "\n\n\tUsage %s ip_address username poolname lbmethod memberlist" % sys.argv[0]
+        sys.exit()
 
-	a = sys.argv[1:]
+    a = sys.argv[1:]
 
-	print "\nHey %s, please enter your password below.\n" % a[1]
-	upass = getpass.getpass()
+    print "\nHey %s, please enter your password below.\n" % a[1]
+    upass = getpass.getpass()
 
-	try:   
-		b = bigsuds.BIGIP(
-			hostname = a[0], 
-			username = a[1], 
-			password = upass,
-			)
-	except Exception, e:
-		print e
+    try:
+        b = bigsuds.BIGIP(
+            hostname=a[0],
+            username=a[1],
+            password=upass,
+        )
+    except Exception, e:
+        print e
 
-	poolinfo = create_pool(b, a[2], a[3], a[4])
-	for x in poolinfo:
-		print "Pool: %s" % a[2]
-		for y in x:
-			print "\t%s:%d" % (y['address'], y['port'])
-
+    poolinfo = create_pool(b, a[2], a[3], a[4])
+    for x in poolinfo:
+        print "Pool: %s" % a[2]
+        for y in x:
+            print "\t%s:%d" % (y['address'], y['port'])
