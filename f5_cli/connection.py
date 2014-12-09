@@ -3,11 +3,12 @@ import bigsuds
 
 class Connection(object):
 
-    def __init__(self, host, user, password, partition):
+    def __init__(self, host, user, password, partition, debug=False):
         self.host = host
         self.user = user
         self.password = password
         self.partition = partition
+        self.debug = debug
 
     def connect(self):
         """Create a connection to the device."""
@@ -15,7 +16,8 @@ class Connection(object):
             bigip = bigsuds.BIGIP(
                 hostname=self.host,
                 username=self.user,
-                password=self.password)
+                password=self.password,
+                debug=self.debug)
             try:
                 bclient = bigip.with_session_id()
                 bclient.System.Session.set_transaction_timeout(60)
