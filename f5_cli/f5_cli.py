@@ -3,7 +3,10 @@
 from argparse import ArgumentParser
 from ConfigParser import ConfigParser
 import getpass
+import json
 import os
+
+from columnize import columnize
 
 from connection import Connection
 from pool import Pool
@@ -78,6 +81,38 @@ def get_config():
     return config
 
 
+class ListFormatters:
+    @staticmethod
+    def one_per_line(lst):
+        return '\n'.join(lst)
+
+    @staticmethod
+    def json_plain(lst):
+        return json.dumps(lst)
+
+    @staticmethod
+    def json_pretty(lst):
+        return json.dumps(lst, indent=4)
+
+    @staticmethod
+    def columns(lst):
+        return columnize(lst, opts={'ljust': True})
+
+
+    formatters = {'1perline': one_per_line,
+                  'json': json_plain,
+                  'json_pretty': json_pretty,
+                  'columns': columns}
+
+    @classmethod
+    def keys(cls):
+        return sorted(cls.formatters.keys())
+
+    @classmethod
+    def get(cls, format):
+        return cls.formatters.get(format).__func__
+
+
 def main():
     parser = ArgumentParser(description="F5 Deployer")
     parser.add_argument('obj', action='store', metavar='object_type',
@@ -86,6 +121,10 @@ def main():
     parser.add_argument('action', action='store', metavar='action',
                         choices=actions,
                         help='Action. One of %(choices)s.')
+    parser.add_argument('--formatter', action='store', metavar='formatter',
+                        choices=ListFormatters.keys(),
+                        default='columns',
+                        help='Output format for lists. One of %(choices)s.')
     parser.add_argument('--user', action="store", dest="user",
                         required=False,
                         help="User name. Defaults to current user.")
@@ -107,6 +146,9 @@ def main():
         prompt = 'Password for {user}@{host}: '.format(user=user, host=host)
         password = getpass.getpass(prompt)
 
+    # In the future, the formattter might be customizable...
+    formatter = ListFormatters.get(args.formatter)
+
     connection = get_f5_connection(host, user, password, args.partition)
     if not connection:
         raise Exception("Unable to get F5 connection")
@@ -118,8 +160,9 @@ def main():
         #     print device.get_config_sync_status()
         object_connection = get_object_connection(args.obj, connection,
                                                   args.partition, parser)
+
         if args.action == "list":
-            print(object_connection.list())
+            print(formatter(object_connection.list()))
         elif args.action == "create":
             result = object_connection.create(parser)
             if result:
