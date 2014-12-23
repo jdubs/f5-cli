@@ -30,7 +30,7 @@ objects = [
 actions = ["list", "create", "delete"]
 
 
-def get_f5_connection(host, username, password, partition):
+def get_f5_connection(host, username, password, partition, debug=False):
     """
     create a connection object to an f5 and return it
 
@@ -40,7 +40,8 @@ def get_f5_connection(host, username, password, partition):
     @param partition - partition to work with
     """
     try:
-        connection = Connection(host, username, password, partition).connect()
+        connection = Connection(
+            host, username, password, partition, debug=debug).connect()
     except Exception as e:
         print("ERROR: {}".format(e))
         return False
@@ -149,10 +150,9 @@ def main():
         prompt = 'Password for {user}@{host}: '.format(user=user, host=host)
         password = getpass.getpass(prompt)
 
-    # In the future, the formattter might be customizable...
-    formatter = ListFormatters.get(args.formatter)
-
-    connection = get_f5_connection(host, user, password, args.partition)
+    connection = get_f5_connection(
+        host, user, password, args.partition,
+        debug=True)
     if not connection:
         raise Exception("Unable to get F5 connection")
 
