@@ -170,6 +170,7 @@ def main():
                 if item.startswith(args.strip_prefix):
                     item = item[len(args.strip_prefix):]
                 obj_list.append(item)
+            formatter = ListFormatters.get(args.formatter)
             print(formatter(obj_list))
         elif args.action == "create":
             result = object_connection.create(parser)
