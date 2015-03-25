@@ -39,13 +39,8 @@ def get_f5_connection(host, username, password, partition, debug=False):
     @param password - the password to connect with
     @param partition - partition to work with
     """
-    try:
-        connection = Connection(
-            host, username, password, partition, debug=debug).connect()
-    except Exception as e:
-        print("ERROR: {}".format(e))
-        return False
-
+    connection = Connection(
+        host, username, password, partition, debug=debug).connect()
     return connection
 
 
