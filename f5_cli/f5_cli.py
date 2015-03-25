@@ -30,7 +30,7 @@ objects = [
 actions = ["list", "create", "delete"]
 
 
-def get_f5_connection(host, username, password, partition, debug=False):
+def get_f5_connection(host, username, password, partition, debug=False, verify=True):
     """
     create a connection object to an f5 and return it
 
@@ -39,8 +39,13 @@ def get_f5_connection(host, username, password, partition, debug=False):
     @param password - the password to connect with
     @param partition - partition to work with
     """
-    connection = Connection(
-        host, username, password, partition, debug=debug).connect()
+    try:
+        connection = Connection(
+            host, username, password, partition, debug=debug, verify=verify).connect()
+    except Exception as e:
+        print("ERROR: {}".format(e))
+        return False
+
     return connection
 
 
@@ -72,7 +77,7 @@ def get_object_connection(obj, connection, partition, parser):
 
 
 def get_config():
-    config = ConfigParser(defaults={'password': None})
+    config = ConfigParser(defaults={'password': None, 'verify': 'True'})
     config.read(os.path.expanduser(config_file))
     return config
 
@@ -126,6 +131,11 @@ def main():
                         help="User name. Defaults to current user.")
     parser.add_argument('--password', action="store", dest="password",
                         help="Password")
+    parser.add_argument('--verify', dest='verify', action='store_true',
+                        help='Do SSL cert validation')
+    parser.add_argument('--no-verify', dest='verify', action='store_false',
+                        help='Do not do SSL cert validation')
+    parser.set_defaults(verify=None)
     parser.add_argument('--host', action="store", dest="host",
                         help='FQDN of the LB you are targeting')
     parser.add_argument('--partition', action="store", dest="partition",
@@ -140,6 +150,9 @@ def main():
     host = args.host or config.get('defaults', 'host')
     user = args.user or config.get(host, 'user')
     password = args.password or config.get(host, 'password')
+    verify = args.verify
+    if verify is None:
+        verify = config.getboolean(host, 'verify')
 
     if password is None:
         prompt = 'Password for {user}@{host}: '.format(user=user, host=host)
@@ -147,7 +160,7 @@ def main():
 
     connection = get_f5_connection(
         host, user, password, args.partition,
-        debug=True)
+        debug=True, verify=verify)
     if not connection:
         raise Exception("Unable to get F5 connection")
 
