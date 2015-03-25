@@ -183,7 +183,7 @@ def main():
                 print("Error, operation did not succeed")
     else:
         print("The device you connected to is NOT THE MASTER")
-        print("The master is currenlty %s") % (device.get_active_node())
+        print("The master is currently %s") % (device.get_active_node())
         raise Exception("Specified host is not the master")
 
 
