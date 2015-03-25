@@ -20,6 +20,20 @@ class Pool:
         """
         return self.connection.LocalLB.Pool.get_list()
 
+    def list_members(self):
+        """
+            List all members in a pool
+
+            @param self - the object type
+        """
+        self.parser.add_argument(
+            '--pool_name', action='store', dest='pool_name', required=True,
+            help='Pool to list members of')
+        args = self.parser.parse_args()
+        pool_name = "/{}/{}".format(args.partition, args.pool_name)
+        return self.connection.LocalLB.Pool.get_member_v2(
+            pool_names=[args.pool_name])[0]
+
     def create(self, parser):
         """
             Create a Pool

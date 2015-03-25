@@ -27,7 +27,7 @@ objects = [
     "ssl_profile",
     "profile",
 ]
-actions = ["list", "create", "delete"]
+actions = ["list", "list-members", "create", "delete"]
 
 
 def get_f5_connection(host, username, password, partition, debug=False, verify=True):
@@ -178,6 +178,15 @@ def main():
                 if item.startswith(args.strip_prefix):
                     item = item[len(args.strip_prefix):]
                 obj_list.append(item)
+            formatter = ListFormatters.get(args.formatter)
+            print(formatter(obj_list))
+        elif args.action == "list-members":
+            obj_list = []
+            for item in object_connection.list_members():
+                if item['address'].startswith(args.strip_prefix):
+                    item['address'] = item['address'][len(args.strip_prefix):]
+                node = '{}:{}'.format(item['address'], item['port'])
+                obj_list.append(node)
             formatter = ListFormatters.get(args.formatter)
             print(formatter(obj_list))
         elif args.action == "create":
